@@ -1,7 +1,13 @@
 package repo
 
+import (
+	"errors"
+	"os"
+	"path/filepath"
+)
+
 type Repository struct {
-	Path string
+	Path string // store absolute path - path/to/project/.gitloom
 }
 
 const (
@@ -9,7 +15,11 @@ const (
 	HeadFile    = "HEAD"
 	RefsDir     = "refs"
 	HeadsDir    = "refs/heads"
+	ObjectsDir  = "objects"
 	MainBranch  = "main"
+
+	DirPerm  = 0755
+	FilePerm = 0644
 )
 
 /*
@@ -19,10 +29,37 @@ const (
   - create a HEAD file within .gitloom/
   - the file should contain one-line: ref: refs/heads/main
   - create a refs directory => .gitloom/refs
-  - create a heads direcotyr => .gitloom/refs/heads
+  - create a objects directory => .gitloom/objects
+  - create a heads direcotry => .gitloom/refs/heads
 */
 func InitRepository(path string) (*Repository, error) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+
+	repoPath := filepath.Join(path, RepoDirName)
+
+	if _, err := os.Stat(repoPath); err == nil {
+		return nil, errors.New("repository already exists")
+	} else if !os.IsNotExist(err) {
+		return nil, err
+	}
+
+	// create the res/heads dir
+	if err := os.MkdirAll(filepath.Join(repoPath, HeadsDir), DirPerm); err != nil {
+		return nil, err
+	}
+
+	// create .gitloom/objects dir
+	if err := os.MkdirAll(filepath.Join(repoPath, ObjectsDir), DirPerm); err != nil {
+		return nil, err
+	}
+
+	if err := os.WriteFile(filepath.Join(repoPath, HeadFile), []byte("ref: refs/heads/main\n"), FilePerm); err != nil {
+		return nil, err
+	}
 	return &Repository{
-		Path: "write-code-here",
+		Path: repoPath,
 	}, nil
 }
