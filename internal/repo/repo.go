@@ -63,3 +63,30 @@ func InitRepository(path string) (*Repository, error) {
 		Path: repoPath,
 	}, nil
 }
+
+/*
+searches for a Gitloom repository starting from the given path and moving up the directory tree until it finds the repository root.
+
+why?
+so we need to get the repo struct, in different places in code, so we can just recreate it
+by walking up the path and checking if we get the repo
+*/
+func FindRepository(startPath string) (*Repository, error) {
+	path, err := filepath.Abs(startPath)
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		repoPath := filepath.Join(path, RepoDirName)
+		if _, err := os.Stat(repoPath); err == nil {
+			return &Repository{Path: repoPath}, nil
+		}
+
+		parent := filepath.Dir(path)
+		if parent == path {
+			return nil, errors.New("No gitloom repository found")
+		}
+		path = parent
+	}
+}
