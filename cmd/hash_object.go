@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/MahendraDani/gitloom.git/internal/object"
 	"github.com/MahendraDani/gitloom.git/internal/repo"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +23,7 @@ var hashObjectCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		hash, err := repo.HashObject(file, r)
+		hash, err := object.HashObject(file, r)
 		if err != nil {
 			fmt.Println("Error:", err)
 			os.Exit(1)

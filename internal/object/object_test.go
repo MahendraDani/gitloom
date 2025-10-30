@@ -1,4 +1,4 @@
-package repo_test
+package object_test
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/MahendraDani/gitloom.git/internal/object"
 	"github.com/MahendraDani/gitloom.git/internal/repo"
 )
 
@@ -31,7 +32,7 @@ func TestHashObject(t *testing.T) {
 	}
 
 	// Call HashObject
-	hash, err := repo.HashObject(filePath, r)
+	hash, err := object.HashObject(filePath, r)
 	if err != nil {
 		t.Fatalf("HashObject returned error: %v", err)
 	}

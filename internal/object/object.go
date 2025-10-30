@@ -1,4 +1,4 @@
-package repo
+package object
 
 import (
 	"bufio"
@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/MahendraDani/gitloom.git/internal/repo"
 )
 
-func HashObject(filePath string, r *Repository) (string, error) {
+func HashObject(filePath string, r *repo.Repository) (string, error) {
 	if r == nil {
 		return "", errors.New("gitloom repository not found. First initialize gitloom repository")
 	}
@@ -58,12 +60,12 @@ func computeSHA1(blob []byte) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func writeObject(blob []byte, hash string, r *Repository) error {
-	objDir := filepath.Join(r.Path, ObjectsDir, hash[:2])
+func writeObject(blob []byte, hash string, r *repo.Repository) error {
+	objDir := filepath.Join(r.Path, repo.ObjectsDir, hash[:2])
 	objPath := filepath.Join(objDir, hash[2:])
 
 	// Ensure directory exists
-	if err := os.MkdirAll(objDir, DirPerm); err != nil {
+	if err := os.MkdirAll(objDir, repo.DirPerm); err != nil {
 		return err
 	}
 
