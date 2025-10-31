@@ -7,8 +7,10 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/MahendraDani/gitloom.git/internal/repo"
 )
@@ -91,4 +93,86 @@ func writeZlibFile(filePath string, data []byte) error {
 	}
 
 	return nil
+}
+
+func CatFile(r *repo.Repository, hash string, flag string) (string, error) {
+	if r == nil {
+		return "", errors.New("gitloom repository not found")
+	}
+
+	if len(hash) < 2 {
+		return "", errors.New("invalid object hash")
+	}
+
+	objPath := filepath.Join(r.Path, repo.ObjectsDir, hash[:2], hash[2:])
+	data, err := DecompressObject(objPath)
+	if err != nil {
+		return "", err
+	}
+
+	nullIdx := bytes.IndexByte(data, 0)
+	if nullIdx == -1 {
+		return "", errors.New("invalid object format (missing header)")
+	}
+
+	header := string(data[:nullIdx])
+	content := string(data[nullIdx+1:])
+
+	parts := strings.SplitN(header, " ", 2)
+	if len(parts) != 2 {
+		return "", errors.New("invalid object header format")
+	}
+
+	objType := parts[0]
+
+	switch flag {
+	case "p":
+		if objType != "blob" {
+			return "", fmt.Errorf("cat-file -p only supports blob objects, got %s", objType)
+		}
+		return content, nil
+
+	case "s":
+		if objType != "blob" {
+			return "", fmt.Errorf("cat-file -s only supports blob objects, got %s", objType)
+		}
+		return fmt.Sprintf("%d", len(content)), nil
+	case "t":
+		return objType, nil
+	default:
+		return "", fmt.Errorf("unsupported flag: %s", flag)
+	}
+}
+
+func DecompressObject(path string) ([]byte, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open object file: %w", err)
+	}
+	defer f.Close()
+
+	zr, err := zlib.NewReader(f)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create zlib reader: %w", err)
+	}
+	defer zr.Close()
+
+	br := bufio.NewReader(zr)
+	var buf bytes.Buffer
+
+	for {
+		chunk := make([]byte, 4096)
+		n, err := br.Read(chunk)
+		if n > 0 {
+			buf.Write(chunk[:n])
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed while reading compressed data: %w", err)
+		}
+	}
+
+	return buf.Bytes(), nil
 }
