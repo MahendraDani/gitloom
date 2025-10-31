@@ -137,7 +137,8 @@ func CatFile(r *repo.Repository, hash string, flag string) (string, error) {
 			return "", fmt.Errorf("cat-file -s only supports blob objects, got %s", objType)
 		}
 		return fmt.Sprintf("%d", len(content)), nil
-
+	case "t":
+		return objType, nil
 	default:
 		return "", fmt.Errorf("unsupported flag: %s", flag)
 	}
