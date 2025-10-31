@@ -100,3 +100,39 @@ func TestHashObject(t *testing.T) {
 		t.Fatalf("expected object NOT to exists, but found at %s", objPath)
 	}
 }
+
+func TestCatFilePrint(t *testing.T) {
+	// Create a temporary directory for the repo
+	tempDir := t.TempDir()
+
+	// setup a gitloom repo
+	r, err := repo.InitRepository(tempDir)
+	if err != nil {
+		t.Fatalf("failed to init repository: %v", err)
+	}
+
+	// create a temp file
+	filePath := filepath.Join(tempDir, "hello.txt")
+	content := []byte("hello world\n")
+	if err := os.WriteFile(filePath, content, 0644); err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
+	// write the file into `.gitloom/objects/*`
+	writeFlag := true
+	hash, err := object.HashObject(filePath, r, writeFlag)
+	if err != nil {
+		t.Fatalf("HashObject returned error: %v", err)
+	}
+
+	flag := "p"
+	output, err := object.CatFile(r, hash, flag)
+	if err != nil {
+		t.Fatalf("CatFile returned error: %v", err)
+	}
+
+	expected := string(content)
+	if output != expected {
+		t.Fatalf("expected content %q, got %q", expected, output)
+	}
+}
