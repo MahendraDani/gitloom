@@ -105,24 +105,6 @@ func CatFile(r *repo.Repository, hash string, flag string) (string, error) {
 	}
 
 	objPath := filepath.Join(r.Path, repo.ObjectsDir, hash[:2], hash[2:])
-	f, err := os.Open(objPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to open object: %w", err)
-	}
-
-	defer f.Close()
-
-	zr, err := zlib.NewReader(f)
-	if err != nil {
-		return "", fmt.Errorf("failed to create zlib reader: %w", err)
-	}
-	defer zr.Close()
-
-	var decompressed bytes.Buffer
-	if _, err := io.Copy(&decompressed, zr); err != nil {
-		return "", fmt.Errorf("failed to decompress object: %w", err)
-	}
-
 	data, err := DecompressObject(objPath)
 	if err != nil {
 		return "", err
@@ -142,12 +124,20 @@ func CatFile(r *repo.Repository, hash string, flag string) (string, error) {
 	}
 
 	objType := parts[0]
+
 	switch flag {
 	case "p":
 		if objType != "blob" {
 			return "", fmt.Errorf("cat-file -p only supports blob objects, got %s", objType)
 		}
 		return content, nil
+
+	case "s":
+		if objType != "blob" {
+			return "", fmt.Errorf("cat-file -s only supports blob objects, got %s", objType)
+		}
+		return fmt.Sprintf("%d", len(content)), nil
+
 	default:
 		return "", fmt.Errorf("unsupported flag: %s", flag)
 	}
