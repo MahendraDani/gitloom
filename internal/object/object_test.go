@@ -13,7 +13,7 @@ import (
 	"github.com/MahendraDani/gitloom.git/internal/repo"
 )
 
-func TestHashObject(t *testing.T) {
+func TestHashObjectAndWrite(t *testing.T) {
 	// Create a temporary directory for the repo
 	tempDir := t.TempDir()
 
@@ -31,8 +31,9 @@ func TestHashObject(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
+	writeFlag := true
 	// Call HashObject
-	hash, err := object.HashObject(filePath, r)
+	hash, err := object.HashObject(filePath, r, writeFlag)
 	if err != nil {
 		t.Fatalf("HashObject returned error: %v", err)
 	}

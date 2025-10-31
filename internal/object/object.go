@@ -13,7 +13,7 @@ import (
 	"github.com/MahendraDani/gitloom.git/internal/repo"
 )
 
-func HashObject(filePath string, r *repo.Repository) (string, error) {
+func HashObject(filePath string, r *repo.Repository, write bool) (string, error) {
 	if r == nil {
 		return "", errors.New("gitloom repository not found. First initialize gitloom repository")
 	}
@@ -26,9 +26,12 @@ func HashObject(filePath string, r *repo.Repository) (string, error) {
 	blob := createBlob(data)
 	hash := computeSHA1(blob)
 
-	if err := writeObject(blob, hash, r); err != nil {
-		return "", err
+	if write {
+		if err := writeObject(blob, hash, r); err != nil {
+			return "", err
+		}
 	}
+
 	return hash, nil
 }
 
