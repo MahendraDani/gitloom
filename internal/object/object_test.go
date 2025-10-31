@@ -13,7 +13,7 @@ import (
 	"github.com/MahendraDani/gitloom.git/internal/repo"
 )
 
-func TestHashObject(t *testing.T) {
+func TestHashObjectAndWrite(t *testing.T) {
 	// Create a temporary directory for the repo
 	tempDir := t.TempDir()
 
@@ -31,8 +31,9 @@ func TestHashObject(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
+	writeFlag := true
 	// Call HashObject
-	hash, err := object.HashObject(filePath, r)
+	hash, err := object.HashObject(filePath, r, writeFlag)
 	if err != nil {
 		t.Fatalf("HashObject returned error: %v", err)
 	}
@@ -66,5 +67,36 @@ func TestHashObject(t *testing.T) {
 
 	if !bytes.Equal(decompressed.Bytes(), expectedBlob) {
 		t.Fatalf("object content mismatch:\n got:  %q\n want: %q", decompressed.Bytes(), expectedBlob)
+	}
+}
+
+func TestHashObject(t *testing.T) {
+	// Create a temporary directory for the repo
+	tempDir := t.TempDir()
+
+	r, err := repo.InitRepository(tempDir)
+	if err != nil {
+		t.Fatalf("failed to init repository: %v", err)
+	}
+
+	fmt.Println(r)
+
+	// Create a test file
+	filePath := filepath.Join(tempDir, "hello.txt")
+	content := []byte("hello world\n")
+	if err := os.WriteFile(filePath, content, 0644); err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
+	writeFlag := false
+	// Call HashObject
+	hash, err := object.HashObject(filePath, r, writeFlag)
+	if err != nil {
+		t.Fatalf("HashObject returned error: %v", err)
+	}
+
+	objPath := filepath.Join(r.Path, repo.ObjectsDir, hash[:2], hash[2:])
+	if _, err := os.Stat(objPath); !os.IsNotExist(err) {
+		t.Fatalf("expected object NOT to exists, but found at %s", objPath)
 	}
 }
