@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"crypto/sha1"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -175,4 +176,37 @@ func DecompressObject(path string) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func HashRawObject(data []byte, objType string, r *repo.Repository, write bool) (string, error) {
+	// Build header: "<type> <size>\0"
+	header := fmt.Sprintf("%s %d\x00", objType, len(data))
+	store := append([]byte(header), data...)
+
+	// Compute SHA-1 hash of the full content
+	hash := sha1.Sum(store)
+	hashHex := hex.EncodeToString(hash[:])
+
+	// If write == false, just return hash
+	if !write {
+		return hashHex, nil
+	}
+
+	// Construct object path (.gitloom/objects/xx/yyyy...)
+	objDir := filepath.Join(r.Path, repo.ObjectsDir, hashHex[:2])
+	objPath := filepath.Join(objDir, hashHex[2:])
+
+	// Avoid rewriting existing objects
+	if _, err := os.Stat(objPath); err == nil {
+		return hashHex, nil
+	}
+
+	// Ensure object subdirectory exists
+	if err := os.MkdirAll(objDir, repo.DirPerm); err != nil {
+		return "", err
+	}
+
+	// Compress and write object data
+	writeZlibFile(objPath, store)
+	return hashHex, nil
 }
