@@ -52,7 +52,7 @@ gitloom init dir-name - creates a new gitloom repository within dir-name directo
 		ctx := context.WithValue(cmd.Context(), repoKey, repo)
 		cmd.SetContext(ctx)
 
-		fmt.Println("Initialized empty gitloom repository at", path)
+		fmt.Println("Initialized empty gitloom repository at", repo.Path)
 	},
 }
 

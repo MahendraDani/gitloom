@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"crypto/sha1"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -116,7 +117,7 @@ func CatFile(r *repo.Repository, hash string, flag string) (string, error) {
 	}
 
 	header := string(data[:nullIdx])
-	content := string(data[nullIdx+1:])
+	content := data[nullIdx+1:]
 
 	parts := strings.SplitN(header, " ", 2)
 	if len(parts) != 2 {
@@ -127,18 +128,57 @@ func CatFile(r *repo.Repository, hash string, flag string) (string, error) {
 
 	switch flag {
 	case "p":
-		if objType != "blob" {
-			return "", fmt.Errorf("cat-file -p only supports blob objects, got %s", objType)
+		switch objType {
+		case "blob":
+			return string(content), nil
+
+		case "tree":
+			var output bytes.Buffer
+			i := 0
+			for i < len(content) {
+				// Parse mode
+				j := bytes.IndexByte(content[i:], ' ')
+				if j < 0 {
+					return "", fmt.Errorf("invalid tree entry: missing space after mode")
+				}
+				mode := string(content[i : i+j])
+				i += j + 1
+
+				// Parse filename
+				k := bytes.IndexByte(content[i:], 0)
+				if k < 0 {
+					return "", fmt.Errorf("invalid tree entry: missing null terminator after filename")
+				}
+				name := string(content[i : i+k])
+				i += k + 1
+
+				// Parse hash (20 bytes)
+				if i+20 > len(content) {
+					return "", fmt.Errorf("invalid tree entry: incomplete hash")
+				}
+				hash := fmt.Sprintf("%x", content[i:i+20])
+				i += 20
+
+				// For now, assume all entries are blobs (we’ll fix this when WriteTree supports directories)
+				objType := "blob"
+				fmt.Fprintf(&output, "%s %s %s\t%s\n", mode, objType, hash, name)
+			}
+
+			return output.String(), nil
+
+		default:
+			return "", fmt.Errorf("cat-file -p not implemented for object type %s", objType)
 		}
-		return content, nil
 
 	case "s":
 		if objType != "blob" {
 			return "", fmt.Errorf("cat-file -s only supports blob objects, got %s", objType)
 		}
 		return fmt.Sprintf("%d", len(content)), nil
+
 	case "t":
 		return objType, nil
+
 	default:
 		return "", fmt.Errorf("unsupported flag: %s", flag)
 	}
@@ -175,4 +215,37 @@ func DecompressObject(path string) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func HashRawObject(data []byte, objType string, r *repo.Repository, write bool) (string, error) {
+	// Build header: "<type> <size>\0"
+	header := fmt.Sprintf("%s %d\x00", objType, len(data))
+	store := append([]byte(header), data...)
+
+	// Compute SHA-1 hash of the full content
+	hash := sha1.Sum(store)
+	hashHex := hex.EncodeToString(hash[:])
+
+	// If write == false, just return hash
+	if !write {
+		return hashHex, nil
+	}
+
+	// Construct object path (.gitloom/objects/xx/yyyy...)
+	objDir := filepath.Join(r.Path, repo.ObjectsDir, hashHex[:2])
+	objPath := filepath.Join(objDir, hashHex[2:])
+
+	// Avoid rewriting existing objects
+	if _, err := os.Stat(objPath); err == nil {
+		return hashHex, nil
+	}
+
+	// Ensure object subdirectory exists
+	if err := os.MkdirAll(objDir, repo.DirPerm); err != nil {
+		return "", err
+	}
+
+	// Compress and write object data
+	writeZlibFile(objPath, store)
+	return hashHex, nil
 }
