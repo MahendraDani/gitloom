@@ -117,7 +117,7 @@ func CatFile(r *repo.Repository, hash string, flag string) (string, error) {
 	}
 
 	header := string(data[:nullIdx])
-	content := string(data[nullIdx+1:])
+	content := data[nullIdx+1:]
 
 	parts := strings.SplitN(header, " ", 2)
 	if len(parts) != 2 {
@@ -128,18 +128,57 @@ func CatFile(r *repo.Repository, hash string, flag string) (string, error) {
 
 	switch flag {
 	case "p":
-		if objType != "blob" {
-			return "", fmt.Errorf("cat-file -p only supports blob objects, got %s", objType)
+		switch objType {
+		case "blob":
+			return string(content), nil
+
+		case "tree":
+			var output bytes.Buffer
+			i := 0
+			for i < len(content) {
+				// Parse mode
+				j := bytes.IndexByte(content[i:], ' ')
+				if j < 0 {
+					return "", fmt.Errorf("invalid tree entry: missing space after mode")
+				}
+				mode := string(content[i : i+j])
+				i += j + 1
+
+				// Parse filename
+				k := bytes.IndexByte(content[i:], 0)
+				if k < 0 {
+					return "", fmt.Errorf("invalid tree entry: missing null terminator after filename")
+				}
+				name := string(content[i : i+k])
+				i += k + 1
+
+				// Parse hash (20 bytes)
+				if i+20 > len(content) {
+					return "", fmt.Errorf("invalid tree entry: incomplete hash")
+				}
+				hash := fmt.Sprintf("%x", content[i:i+20])
+				i += 20
+
+				// For now, assume all entries are blobs (we’ll fix this when WriteTree supports directories)
+				objType := "blob"
+				fmt.Fprintf(&output, "%s %s %s\t%s\n", mode, objType, hash, name)
+			}
+
+			return output.String(), nil
+
+		default:
+			return "", fmt.Errorf("cat-file -p not implemented for object type %s", objType)
 		}
-		return content, nil
 
 	case "s":
 		if objType != "blob" {
 			return "", fmt.Errorf("cat-file -s only supports blob objects, got %s", objType)
 		}
 		return fmt.Sprintf("%d", len(content)), nil
+
 	case "t":
 		return objType, nil
+
 	default:
 		return "", fmt.Errorf("unsupported flag: %s", flag)
 	}
