@@ -188,3 +188,102 @@ func TestWriteTree_EmptyDirectory(t *testing.T) {
 		t.Fatalf("expected empty tree content, got:\n%s", output)
 	}
 }
+
+func TestWriteTree_WithSubdirectories(t *testing.T) {
+	tempDir := t.TempDir()
+
+	r, err := repo.InitRepository(tempDir)
+	if err != nil {
+		t.Fatalf("failed to init repository: %v", err)
+	}
+
+	// Create files
+	rootFile := filepath.Join(tempDir, "file1.txt")
+	if err := os.WriteFile(rootFile, []byte("root content\n"), repo.FilePerm); err != nil {
+		t.Fatalf("failed to write root file: %v", err)
+	}
+
+	subDir := filepath.Join(tempDir, "subdir")
+	if err := os.Mkdir(subDir, repo.DirPerm); err != nil {
+		t.Fatalf("failed to create subdir: %v", err)
+	}
+
+	subFile1 := filepath.Join(subDir, "file2.txt")
+	subFile2 := filepath.Join(subDir, "file3.txt")
+
+	if err := os.WriteFile(subFile1, []byte("sub content 1\n"), repo.FilePerm); err != nil {
+		t.Fatalf("failed to write sub file1: %v", err)
+	}
+	if err := os.WriteFile(subFile2, []byte("sub content 2\n"), repo.FilePerm); err != nil {
+		t.Fatalf("failed to write sub file2: %v", err)
+	}
+
+	// Call WriteTree
+	rootTreeHash, err := tree.WriteTree(tempDir, r)
+	if err != nil {
+		t.Fatalf("WriteTree returned error: %v", err)
+	}
+
+	// Verify root tree object exists
+	rootObjPath := filepath.Join(r.Path, repo.ObjectsDir, rootTreeHash[:2], rootTreeHash[2:])
+	if _, err := os.Stat(rootObjPath); os.IsNotExist(err) {
+		t.Fatalf("expected root tree object to exist, not found at %s", rootObjPath)
+	}
+
+	// Verify root tree type
+	rootType, err := object.CatFile(r, rootTreeHash, "t")
+	if err != nil {
+		t.Fatalf("CatFile -t for root tree returned error: %v", err)
+	}
+	if rootType != "tree" {
+		t.Fatalf("expected root tree object type 'tree', got '%s'", rootType)
+	}
+
+	// Pretty-print root tree
+	rootTree, err := object.CatFile(r, rootTreeHash, "p")
+	if err != nil {
+		t.Fatalf("CatFile -p for root tree returned error: %v", err)
+	}
+
+	if !strings.Contains(rootTree, "file1.txt") {
+		t.Fatalf("expected root tree to contain 'file1.txt', got:\n%s", rootTree)
+	}
+	if !strings.Contains(rootTree, "subdir") {
+		t.Fatalf("expected root tree to contain 'subdir', got:\n%s", rootTree)
+	}
+
+	// Extract the hash of subdir tree (optional deeper validation)
+	lines := strings.Split(rootTree, "\n")
+	var subdirHash string
+	for _, line := range lines {
+		if strings.Contains(line, "subdir") {
+			fields := strings.Fields(line)
+			if len(fields) >= 3 {
+				subdirHash = fields[2]
+				break
+			}
+		}
+	}
+
+	if subdirHash == "" {
+		t.Fatalf("failed to extract subdir hash from root tree output")
+	}
+
+	// Verify sub-tree type and content
+	subType, err := object.CatFile(r, subdirHash, "t")
+	if err != nil {
+		t.Fatalf("CatFile -t for subdir returned error: %v", err)
+	}
+	if subType != "tree" {
+		t.Fatalf("expected subdir object type 'tree', got '%s'", subType)
+	}
+
+	subTree, err := object.CatFile(r, subdirHash, "p")
+	if err != nil {
+		t.Fatalf("CatFile -p for subdir returned error: %v", err)
+	}
+
+	if !strings.Contains(subTree, "file2.txt") || !strings.Contains(subTree, "file3.txt") {
+		t.Fatalf("expected subdir tree to contain file2.txt and file3.txt, got:\n%s", subTree)
+	}
+}
