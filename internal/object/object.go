@@ -16,7 +16,7 @@ import (
 	"github.com/MahendraDani/gitloom.git/internal/repo"
 )
 
-func HashObject(filePath string, r *repo.Repository, write bool) (string, error) {
+func HashObject(filePath string, r *repo.Repo, write bool) (string, error) {
 	if r == nil {
 		return "", errors.New("gitloom repository not found. First initialize gitloom repository")
 	}
@@ -66,7 +66,7 @@ func computeSHA1(blob []byte) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func writeObject(blob []byte, hash string, r *repo.Repository) error {
+func writeObject(blob []byte, hash string, r *repo.Repo) error {
 	objDir := filepath.Join(r.Path, repo.ObjectsDir, hash[:2])
 	objPath := filepath.Join(objDir, hash[2:])
 
@@ -96,7 +96,7 @@ func writeZlibFile(filePath string, data []byte) error {
 	return nil
 }
 
-func CatFile(r *repo.Repository, hash string, flag string) (string, error) {
+func CatFile(r *repo.Repo, hash string, flag string) (string, error) {
 	if r == nil {
 		return "", errors.New("gitloom repository not found")
 	}
@@ -217,7 +217,7 @@ func DecompressObject(path string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func HashRawObject(data []byte, objType string, r *repo.Repository, write bool) (string, error) {
+func HashRawObject(data []byte, objType string, r *repo.Repo, write bool) (string, error) {
 	// Build header: "<type> <size>\0"
 	header := fmt.Sprintf("%s %d\x00", objType, len(data))
 	store := append([]byte(header), data...)

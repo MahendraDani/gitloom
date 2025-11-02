@@ -12,11 +12,11 @@ func TestInitRepository(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Run the function under test
-	r, err := repo.InitRepository(tempDir)
-	if err != nil {
-		t.Fatalf("InitRepository failed: %v", err)
-	}
+	r := repo.NewRepo(tempDir)
+	if err := r.Init(); err != nil {
+		t.Fatalf("failed to init repository: %v", err)
 
+	}
 	// Check .gitloom directory exists
 	gitloomPath := filepath.Join(tempDir, repo.RepoDirName)
 	if _, err := os.Stat(gitloomPath); os.IsNotExist(err) {
@@ -76,11 +76,10 @@ func TestInitRepositoryAlreadyExists(t *testing.T) {
 		t.Fatalf("failed to create fake .gitloom directory: %v", err)
 	}
 
-	_, err := repo.InitRepository(tempDir)
-	if err == nil {
-		t.Fatalf("expected error for existing repository, got nil")
-	}
 	expectedErr := "repository already exists"
+	r := repo.NewRepo(tempDir)
+	err := r.Init()
+
 	if err.Error() != expectedErr {
 		t.Fatalf("unexpected error message:\n got: %q\nwant: %q", err.Error(), expectedErr)
 	}
@@ -91,7 +90,9 @@ func TestInitRepositoryInvalidPath(t *testing.T) {
 	// On Unix, /root usually requires root privileges.
 	invalidPath := "/root/gitloom-test-invalid"
 
-	_, err := repo.InitRepository(invalidPath)
+	r := repo.NewRepo(invalidPath)
+	err := r.Init()
+
 	if err == nil {
 		t.Fatalf("expected error for invalid path, got nil")
 	}

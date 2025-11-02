@@ -15,8 +15,8 @@ func TestWriteTree_SingleFile(t *testing.T) {
 	// Create a temporary directory for the repo
 	tempDir := t.TempDir()
 
-	r, err := repo.InitRepository(tempDir)
-	if err != nil {
+	r := repo.NewRepo(tempDir)
+	if err := r.Init(); err != nil {
 		t.Fatalf("failed to init repository: %v", err)
 	}
 
@@ -53,8 +53,8 @@ func TestWriteTree_SingleFile(t *testing.T) {
 func TestWriteTree_IgnoresGitloomDir(t *testing.T) {
 	tempDir := t.TempDir()
 
-	r, err := repo.InitRepository(tempDir)
-	if err != nil {
+	r := repo.NewRepo(tempDir)
+	if err := r.Init(); err != nil {
 		t.Fatalf("failed to init repository: %v", err)
 	}
 
@@ -97,8 +97,8 @@ func TestWriteTree_IgnoresGitloomDir(t *testing.T) {
 func TestWriteTree_MultipleFiles(t *testing.T) {
 	tempDir := t.TempDir()
 
-	r, err := repo.InitRepository(tempDir)
-	if err != nil {
+	r := repo.NewRepo(tempDir)
+	if err := r.Init(); err != nil {
 		t.Fatalf("failed to init repository: %v", err)
 	}
 
@@ -147,8 +147,8 @@ func TestWriteTree_MultipleFiles(t *testing.T) {
 func TestWriteTree_EmptyDirectory(t *testing.T) {
 	tempDir := t.TempDir()
 
-	r, err := repo.InitRepository(tempDir)
-	if err != nil {
+	r := repo.NewRepo(tempDir)
+	if err := r.Init(); err != nil {
 		t.Fatalf("failed to init repository: %v", err)
 	}
 
@@ -192,11 +192,10 @@ func TestWriteTree_EmptyDirectory(t *testing.T) {
 func TestWriteTree_WithSubdirectories(t *testing.T) {
 	tempDir := t.TempDir()
 
-	r, err := repo.InitRepository(tempDir)
-	if err != nil {
+	r := repo.NewRepo(tempDir)
+	if err := r.Init(); err != nil {
 		t.Fatalf("failed to init repository: %v", err)
 	}
-
 	// Create files
 	rootFile := filepath.Join(tempDir, "file1.txt")
 	if err := os.WriteFile(rootFile, []byte("root content\n"), repo.FilePerm); err != nil {

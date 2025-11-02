@@ -17,12 +17,10 @@ func TestHashObjectAndWrite(t *testing.T) {
 	// Create a temporary directory for the repo
 	tempDir := t.TempDir()
 
-	r, err := repo.InitRepository(tempDir)
-	if err != nil {
+	r := repo.NewRepo(tempDir)
+	if err := r.Init(); err != nil {
 		t.Fatalf("failed to init repository: %v", err)
 	}
-
-	fmt.Println(r)
 
 	// Create a test file
 	filePath := filepath.Join(tempDir, "hello.txt")
@@ -74,12 +72,10 @@ func TestHashObject(t *testing.T) {
 	// Create a temporary directory for the repo
 	tempDir := t.TempDir()
 
-	r, err := repo.InitRepository(tempDir)
-	if err != nil {
+	r := repo.NewRepo(tempDir)
+	if err := r.Init(); err != nil {
 		t.Fatalf("failed to init repository: %v", err)
 	}
-
-	fmt.Println(r)
 
 	// Create a test file
 	filePath := filepath.Join(tempDir, "hello.txt")
@@ -106,8 +102,8 @@ func TestCatFilePrint(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// setup a gitloom repo
-	r, err := repo.InitRepository(tempDir)
-	if err != nil {
+	r := repo.NewRepo(tempDir)
+	if err := r.Init(); err != nil {
 		t.Fatalf("failed to init repository: %v", err)
 	}
 
@@ -140,11 +136,10 @@ func TestCatFilePrint(t *testing.T) {
 func TestCatFileSize(t *testing.T) {
 	// Create a temporary gitloom repo
 	tempDir := t.TempDir()
-	r, err := repo.InitRepository(tempDir)
-	if err != nil {
+	r := repo.NewRepo(tempDir)
+	if err := r.Init(); err != nil {
 		t.Fatalf("failed to init repository: %v", err)
 	}
-
 	// Create a test file
 	filePath := filepath.Join(tempDir, "hello.txt")
 	content := []byte("hello world\n")
@@ -177,8 +172,8 @@ func TestCatFileType(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// setup a gitloom repo
-	r, err := repo.InitRepository(tempDir)
-	if err != nil {
+	r := repo.NewRepo(tempDir)
+	if err := r.Init(); err != nil {
 		t.Fatalf("failed to init repository: %v", err)
 	}
 

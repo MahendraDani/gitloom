@@ -19,7 +19,7 @@ var hashObjectCmd = &cobra.Command{
 		file := args[0]
 
 		// Find the gitloom repo starting from current directory
-		r, err := repo.FindRepository(".")
+		r, err := repo.FindRepo(".")
 		if err != nil {
 			fmt.Println("Error:", err)
 			os.Exit(1)

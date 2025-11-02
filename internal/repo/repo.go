@@ -6,10 +6,6 @@ import (
 	"path/filepath"
 )
 
-type Repository struct {
-	Path string // store absolute path - path/to/project/.gitloom
-}
-
 const (
 	RepoDirName = ".gitloom"
 	HeadFile    = "HEAD"
@@ -22,71 +18,68 @@ const (
 	FilePerm = 0644
 )
 
-/*
-- check if .gitloom dir already exists => return error
-- if not, then
-  - create a .gitloom directory within the provided path
-  - create a HEAD file within .gitloom/
-  - the file should contain one-line: ref: refs/heads/main
-  - create a refs directory => .gitloom/refs
-  - create a objects directory => .gitloom/objects
-  - create a heads direcotry => .gitloom/refs/heads
-*/
-func InitRepository(path string) (*Repository, error) {
-	path, err := filepath.Abs(path)
-	if err != nil {
-		return nil, err
-	}
-
-	repoPath := filepath.Join(path, RepoDirName)
-
-	if _, err := os.Stat(repoPath); err == nil {
-		return nil, errors.New("repository already exists")
-	} else if !os.IsNotExist(err) {
-		return nil, err
-	}
-
-	// create the res/heads dir
-	if err := os.MkdirAll(filepath.Join(repoPath, HeadsDir), DirPerm); err != nil {
-		return nil, err
-	}
-
-	// create .gitloom/objects dir
-	if err := os.MkdirAll(filepath.Join(repoPath, ObjectsDir), DirPerm); err != nil {
-		return nil, err
-	}
-
-	if err := os.WriteFile(filepath.Join(repoPath, HeadFile), []byte("ref: refs/heads/main\n"), FilePerm); err != nil {
-		return nil, err
-	}
-	return &Repository{
-		Path: repoPath,
-	}, nil
+type Repo struct {
+	Path string
 }
 
-/*
-searches for a Gitloom repository starting from the given path and moving up the directory tree until it finds the repository root.
+func NewRepo(path string) *Repo {
+	return &Repo{Path: path}
+}
 
-why?
-so we need to get the repo struct, in different places in code, so we can just recreate it
-by walking up the path and checking if we get the repo
-*/
-func FindRepository(startPath string) (*Repository, error) {
+func FindRepo(startPath string) (*Repo, error) {
 	path, err := filepath.Abs(startPath)
 	if err != nil {
 		return nil, err
 	}
-
 	for {
 		repoPath := filepath.Join(path, RepoDirName)
 		if _, err := os.Stat(repoPath); err == nil {
-			return &Repository{Path: repoPath}, nil
+			return NewRepo(repoPath), nil
 		}
 
 		parent := filepath.Dir(path)
 		if parent == path {
-			return nil, errors.New("No gitloom repository found")
+			return nil, errors.New("gitloom repository not found")
 		}
 		path = parent
 	}
 }
+
+func (r *Repo) Init() error {
+	path, err := filepath.Abs(r.Path)
+	if err != nil {
+		return err
+	}
+
+	repoPath := filepath.Join(path, RepoDirName)
+
+	// check if repo already exists
+	if _, err := os.Stat(repoPath); err == nil {
+		return errors.New("repository already exists")
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+
+	// create refs/head dir
+	if err := os.MkdirAll(filepath.Join(repoPath, HeadsDir), DirPerm); err != nil {
+		return err
+	}
+
+	// create refs/objects dir
+	if err := os.MkdirAll(filepath.Join(repoPath, ObjectsDir), DirPerm); err != nil {
+		return err
+	}
+
+	// create HEAD file
+	headContent := []byte("ref: refs/heads/main\n")
+	if err := os.WriteFile(filepath.Join(repoPath, HeadFile), headContent, FilePerm); err != nil {
+		return err
+	}
+
+	r.Path = repoPath
+	return nil
+}
+
+// TODO: implement them
+// func (r *Repo) WriteObject(object internal.Object) (string, error)
+// func (r *Repo) ReadObject(hash string) (internal.Object, error)
