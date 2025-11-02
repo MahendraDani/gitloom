@@ -29,7 +29,7 @@ Usage:
 	Run: func(cmd *cobra.Command, args []string) {
 		hash := args[0]
 
-		r, err := repo.FindRepository(".")
+		r, err := repo.FindRepo(".")
 		if err != nil {
 			log.Fatalf("Error: %v", err)
 		}

@@ -20,7 +20,7 @@ var writeTreeCmd = &cobra.Command{
 		}
 
 		// Find and load the repository
-		r, err := repo.FindRepository(dir)
+		r, err := repo.FindRepo(dir)
 		if err != nil {
 			return fmt.Errorf("not a gitloom repository: %v", err)
 		}

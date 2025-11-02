@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -43,14 +42,10 @@ gitloom init dir-name - creates a new gitloom repository within dir-name directo
 			return
 		}
 
-		repo, err := repo.InitRepository(absPath)
-		if err != nil {
+		repo := repo.NewRepo(absPath)
+		if err := repo.Init(); err != nil {
 			fmt.Println("Error initializing repository:", err)
-			return
 		}
-
-		ctx := context.WithValue(cmd.Context(), repoKey, repo)
-		cmd.SetContext(ctx)
 
 		fmt.Println("Initialized empty gitloom repository at", repo.Path)
 	},

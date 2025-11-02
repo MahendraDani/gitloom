@@ -13,7 +13,7 @@ import (
 
 // WriteTree creates a tree object representing the current state
 // of the working directory, recursively including subdirectories.
-func WriteTree(dir string, r *repo.Repository) (string, error) {
+func WriteTree(dir string, r *repo.Repo) (string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return "", err
