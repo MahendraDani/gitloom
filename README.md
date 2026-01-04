@@ -2,6 +2,8 @@
 
 Gitloom is a straightforward, Git-style version control system built in Go. It mimics core Git features like initializing repositories, storing objects, constructing trees, and creating commits. As a fun learning project, it demystifies Git's internals and the magic of content-addressable storage—because who doesn't love playing pretend VCS without accidentally nuking your codebase?
 
+![Gitloom](./gitloom.png)
+
 The goals behind building this project include:
 1. Sharpening Go skills through a practical, hands-on build.
 2. Understand Git's inner workings by coding it from the ground up.
